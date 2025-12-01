@@ -473,8 +473,39 @@ button, .btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--secondary-teal);
+  border: 2px solid var(--secondary-teal);
   position: relative;
+  overflow: hidden;
+}
+
+.map-display iframe {
+  border-radius: var(--radius-lg);
+}
+
+.map-overlay-info {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 15px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(5px);
+  z-index: 10;
+}
+
+.cleanup-pin {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--primary-blue);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cleanup-pin i {
+  color: var(--accent-coral);
+  font-size: 1.1rem;
 }
 
 .map-loading {
