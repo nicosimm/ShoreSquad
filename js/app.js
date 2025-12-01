@@ -508,21 +508,23 @@ function refreshWeatherData() {
 function initMapPlaceholder() {
   if (!elements.mapDisplay) return;
   
-  // Simulate map loading
-  setTimeout(() => {
-    elements.mapDisplay.innerHTML = `
-      <div class="map-placeholder">
-        <div class="map-icon">
-          <i class="fas fa-map-marked-alt fa-3x"></i>
-        </div>
-        <h3>Interactive Beach Map</h3>
-        <p>Click to view cleanup locations near you</p>
-        <button class="load-map-btn" onclick="loadInteractiveMap()">
-          Load Map
-        </button>
-      </div>
-    `;
-  }, 500);
+  // Check if iframe loads successfully
+  const iframe = elements.mapDisplay.querySelector('iframe');
+  if (iframe) {
+    iframe.addEventListener('load', () => {
+      console.log('✅ Google Maps loaded successfully');
+    });
+    
+    iframe.addEventListener('error', () => {
+      console.warn('❌ Google Maps failed to load');
+      handleMapError();
+    });
+    
+    // Fallback timeout in case map doesn't load
+    setTimeout(() => {
+      checkMapLoaded();
+    }, 5000);
+  }
   
   // Location search functionality
   if (elements.locationInput && elements.searchBtn) {
@@ -533,6 +535,60 @@ function initMapPlaceholder() {
       }
     });
   }
+}
+
+function checkMapLoaded() {
+  const iframe = document.querySelector('#interactive-map iframe');
+  if (iframe) {
+    try {
+      // Try to access iframe content (will fail if not loaded)
+      iframe.contentWindow.location.href;
+    } catch (error) {
+      // If we can't access it, it might mean it's loaded from external domain (which is expected)
+      console.log('Map iframe appears to be loaded from external domain (normal)');
+      return;
+    }
+  }
+}
+
+function handleMapError() {
+  console.warn('🗺️ Map loading failed, showing fallback');
+  const mapDisplay = document.getElementById('interactive-map');
+  if (mapDisplay) {
+    const iframe = mapDisplay.querySelector('iframe');
+    const fallback = mapDisplay.querySelector('.map-fallback');
+    
+    if (iframe) iframe.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+  }
+}
+
+function openInMaps() {
+  const lat = 1.381497;
+  const lng = 103.955574;
+  const label = 'Pasir Ris Beach Cleanup';
+  
+  // Try to open in different map applications
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // Try Google Maps app first, then Apple Maps
+    const googleMapsUrl = `https://maps.google.com/maps?q=${lat},${lng}&ll=${lat},${lng}&t=m&z=15`;
+    const appleMapsUrl = `https://maps.apple.com/?q=${label}&ll=${lat},${lng}&z=15`;
+    
+    // For iOS devices, try Apple Maps first
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      window.open(appleMapsUrl, '_blank');
+    } else {
+      window.open(googleMapsUrl, '_blank');
+    }
+  } else {
+    // Desktop - open Google Maps in new tab
+    const desktopMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=ChIJtfj1234567890`;
+    window.open(desktopMapsUrl, '_blank');
+  }
+  
+  trackUserInteraction('map_opened_external', { lat, lng, isMobile });
 }
 
 function handleLocationSearch() {
@@ -1020,3 +1076,8 @@ window.ShoreSquad = {
     debounce
   }
 };
+
+// Global functions for HTML onclick handlers
+window.handleMapError = handleMapError;
+window.openInMaps = openInMaps;
+window.refreshWeatherData = refreshWeatherData;

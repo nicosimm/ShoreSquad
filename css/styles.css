@@ -482,6 +482,61 @@ button, .btn {
   border-radius: var(--radius-lg);
 }
 
+.map-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gray-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+
+.fallback-content {
+  text-align: center;
+  padding: var(--spacing-xl);
+  max-width: 400px;
+}
+
+.fallback-content i {
+  color: var(--primary-blue);
+  margin-bottom: var(--spacing-lg);
+}
+
+.fallback-content h3 {
+  color: var(--dark-navy);
+  margin-bottom: var(--spacing-md);
+}
+
+.fallback-content p {
+  margin-bottom: var(--spacing-sm);
+  color: var(--gray-medium);
+}
+
+.open-maps-btn {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: var(--spacing-lg);
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.open-maps-btn:hover {
+  background: var(--secondary-teal);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
 .map-overlay-info {
   position: absolute;
   top: 15px;
