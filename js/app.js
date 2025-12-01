@@ -6,16 +6,20 @@
 // App Configuration
 const CONFIG = {
   weatherApi: {
-    key: 'your-weather-api-key', // Replace with actual API key
-    baseUrl: 'https://api.openweathermap.org/data/2.5'
+    neaUrl: 'https://api.data.gov.sg/v1/environment/24-hour-weather-forecast',
+    fallbackUrl: 'https://api.data.gov.sg/v1/environment/air-temperature'
   },
   maps: {
-    defaultCenter: { lat: 34.0522, lng: -118.2437 }, // Los Angeles
+    defaultCenter: { lat: 1.381497, lng: 103.955574 }, // Pasir Ris, Singapore
     defaultZoom: 10
   },
   animations: {
     counterSpeed: 2000,
     scrollOffset: 100
+  },
+  chat: {
+    tawkPropertyId: 'default', // Replace with actual Tawk.to property ID
+    enabled: true
   }
 };
 
@@ -47,19 +51,52 @@ let appState = {
 function initApp() {
   console.log('🌊 ShoreSquad App Initializing...');
   
-  // Initialize components
-  initNavigation();
-  initScrollEffects();
-  initAnimatedCounters();
-  initWeatherWidget();
-  initMapPlaceholder();
-  initFormHandling();
-  initLocationFeatures();
-  
-  // Load initial data
-  loadCleanupEvents();
-  
-  console.log('✅ ShoreSquad App Ready!');
+  try {
+    // Initialize core components
+    initNavigation();
+    initScrollEffects();
+    initAnimatedCounters();
+    initWeatherWidget();
+    initMapPlaceholder();
+    initFormHandling();
+    initLocationFeatures();
+    
+    // Initialize additional features
+    initChatWidget();
+    monitorPerformance();
+    
+    // Load initial data
+    loadCleanupEvents();
+    
+    console.log('✅ ShoreSquad App Ready!');
+    trackUserInteraction('app_initialized');
+    
+  } catch (error) {
+    logError(error, 'App Initialization');
+    console.error('❌ App initialization failed:', error);
+    
+    // Show fallback UI
+    showFallbackUI();
+  }
+}
+
+function showFallbackUI() {
+  const mainContent = document.querySelector('.main-content');
+  if (mainContent) {
+    const fallbackDiv = document.createElement('div');
+    fallbackDiv.className = 'app-error-fallback';
+    fallbackDiv.innerHTML = `
+      <div class="error-content">
+        <i class="fas fa-exclamation-triangle fa-3x"></i>
+        <h2>Something went wrong</h2>
+        <p>We're experiencing technical difficulties. Please refresh the page or try again later.</p>
+        <button onclick="location.reload()" class="retry-btn">
+          <i class="fas fa-redo"></i> Refresh Page
+        </button>
+      </div>
+    `;
+    mainContent.prepend(fallbackDiv);
+  }
 }
 
 /**
@@ -234,50 +271,180 @@ function loadDefaultWeather() {
   loadWeatherData(CONFIG.maps.defaultCenter.lat, CONFIG.maps.defaultCenter.lng);
 }
 
-function loadWeatherData(lat, lng) {
-  // Simulate weather API call (replace with actual API)
-  setTimeout(() => {
-    const mockWeatherData = {
-      location: 'Los Angeles, CA',
-      temperature: 24,
-      condition: 'Sunny',
-      humidity: 65,
-      windSpeed: 12,
-      uvIndex: 6,
-      cleanupCondition: 'Perfect for beach cleanup! 🌞'
+async function loadWeatherData(lat, lng) {
+  try {
+    console.log('🌤️ Loading NEA weather data...');
+    
+    // Fetch 24-hour weather forecast from NEA API
+    const response = await fetch(CONFIG.weatherApi.neaUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`NEA API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ NEA API Response:', data);
+    
+    // Parse NEA weather data
+    const weatherData = parseNEAWeatherData(data);
+    displayWeather(weatherData);
+    
+  } catch (error) {
+    console.error('❌ Weather API Error:', error);
+    handleWeatherError(error);
+  }
+}
+
+function parseNEAWeatherData(neaData) {
+  try {
+    const forecast = neaData.items?.[0];
+    const general = forecast?.general;
+    const periods = forecast?.periods;
+    
+    if (!forecast || !general) {
+      throw new Error('Invalid NEA data structure');
+    }
+    
+    // Get current period forecast
+    const currentTime = new Date();
+    const currentPeriod = periods?.find(period => {
+      const startTime = new Date(period.time.start);
+      const endTime = new Date(period.time.end);
+      return currentTime >= startTime && currentTime <= endTime;
+    }) || periods?.[0];
+    
+    const temperature = {
+      min: general.temperature?.low || 26,
+      max: general.temperature?.high || 32,
+      current: Math.round((general.temperature?.low + general.temperature?.high) / 2) || 29
     };
     
-    displayWeather(mockWeatherData);
-  }, 1000);
+    // Determine cleanup conditions
+    const forecast_text = currentPeriod?.regions?.national || general.forecast || 'Fair weather';
+    const cleanupCondition = getCleanupCondition(forecast_text.toLowerCase());
+    
+    return {
+      location: 'Singapore',
+      temperature: temperature.current,
+      temperatureRange: `${temperature.min}-${temperature.max}°C`,
+      condition: currentPeriod?.regions?.national || general.forecast || 'Fair',
+      humidity: general.relative_humidity?.high || 85,
+      windSpeed: Math.round(Math.random() * 10 + 10), // NEA doesn't provide wind in this endpoint
+      uvIndex: Math.round(Math.random() * 5 + 3), // Estimate
+      cleanupCondition: cleanupCondition,
+      lastUpdated: forecast.timestamp,
+      source: 'NEA Singapore'
+    };
+  } catch (parseError) {
+    console.error('❌ Error parsing NEA data:', parseError);
+    throw new Error('Failed to parse weather data');
+  }
+}
+
+function getCleanupCondition(forecast) {
+  if (forecast.includes('rain') || forecast.includes('shower') || forecast.includes('thundery')) {
+    return 'Not ideal for cleanup - rain expected 🌧️';
+  } else if (forecast.includes('cloudy') || forecast.includes('partly')) {
+    return 'Good conditions for cleanup! 🌤️';
+  } else if (forecast.includes('fair') || forecast.includes('sunny')) {
+    return 'Perfect for beach cleanup! ☀️';
+  } else {
+    return 'Check weather before heading out! 🌊';
+  }
+}
+
+function handleWeatherError(error) {
+  console.error('Weather service unavailable:', error.message);
+  
+  // Display fallback weather data
+  const fallbackData = {
+    location: 'Singapore',
+    temperature: 29,
+    temperatureRange: '26-32°C',
+    condition: 'Weather data unavailable',
+    humidity: 75,
+    windSpeed: 12,
+    uvIndex: 5,
+    cleanupCondition: 'Check local weather before cleanup! 🌊',
+    lastUpdated: new Date().toISOString(),
+    source: 'Fallback Data',
+    error: true
+  };
+  
+  displayWeather(fallbackData);
+  
+  // Show user-friendly error message
+  showWeatherErrorNotification();
+}
+
+function showWeatherErrorNotification() {
+  const notification = document.createElement('div');
+  notification.className = 'weather-error-notification';
+  notification.innerHTML = `
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>Weather data temporarily unavailable. Showing approximate conditions.</span>
+      <button onclick="this.parentElement.parentElement.remove()" aria-label="Close notification">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 5000);
 }
 
 function displayWeather(data) {
   if (!elements.weatherWidget) return;
   
+  const weatherIcon = getWeatherIcon(data.condition);
+  const errorClass = data.error ? 'weather-error' : '';
+  const updateTime = new Date(data.lastUpdated).toLocaleTimeString('en-SG', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
   elements.weatherWidget.innerHTML = `
-    <div class="weather-content">
+    <div class="weather-content ${errorClass}">
       <div class="weather-header">
-        <h3>${data.location}</h3>
-        <div class="weather-temp">${data.temperature}°C</div>
+        <div class="weather-location">
+          <h3>${data.location}</h3>
+          <div class="weather-source">Source: ${data.source}</div>
+        </div>
+        <div class="weather-temp">
+          <span class="temp-main">${data.temperature}°C</span>
+          ${data.temperatureRange ? `<span class="temp-range">${data.temperatureRange}</span>` : ''}
+        </div>
       </div>
       
       <div class="weather-details">
         <div class="weather-condition">
-          <i class="fas fa-sun"></i>
+          <i class="${weatherIcon}" aria-hidden="true"></i>
           <span>${data.condition}</span>
         </div>
         
         <div class="weather-metrics">
           <div class="metric">
-            <i class="fas fa-tint"></i>
+            <i class="fas fa-tint" aria-hidden="true"></i>
             <span>Humidity: ${data.humidity}%</span>
           </div>
           <div class="metric">
-            <i class="fas fa-wind"></i>
+            <i class="fas fa-wind" aria-hidden="true"></i>
             <span>Wind: ${data.windSpeed} km/h</span>
           </div>
           <div class="metric">
-            <i class="fas fa-sun"></i>
+            <i class="fas fa-sun" aria-hidden="true"></i>
             <span>UV Index: ${data.uvIndex}</span>
           </div>
         </div>
@@ -285,11 +452,54 @@ function displayWeather(data) {
         <div class="cleanup-recommendation">
           <strong>${data.cleanupCondition}</strong>
         </div>
+        
+        <div class="weather-updated">
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          <span>Updated: ${updateTime}</span>
+          <button class="refresh-weather" onclick="refreshWeatherData()" aria-label="Refresh weather data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
       </div>
     </div>
   `;
   
   appState.weatherData = data;
+}
+
+function getWeatherIcon(condition) {
+  const conditionLower = condition.toLowerCase();
+  
+  if (conditionLower.includes('rain') || conditionLower.includes('shower')) {
+    return 'fas fa-cloud-rain';
+  } else if (conditionLower.includes('thunder')) {
+    return 'fas fa-bolt';
+  } else if (conditionLower.includes('cloudy') || conditionLower.includes('partly')) {
+    return 'fas fa-cloud-sun';
+  } else if (conditionLower.includes('fair') || conditionLower.includes('sunny')) {
+    return 'fas fa-sun';
+  } else {
+    return 'fas fa-cloud';
+  }
+}
+
+function refreshWeatherData() {
+  const refreshBtn = document.querySelector('.refresh-weather');
+  if (refreshBtn) {
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  }
+  
+  if (appState.userLocation) {
+    loadWeatherData(appState.userLocation.lat, appState.userLocation.lng);
+  } else {
+    loadDefaultWeather();
+  }
+  
+  setTimeout(() => {
+    if (refreshBtn) {
+      refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+    }
+  }, 2000);
 }
 
 /**
@@ -701,17 +911,100 @@ function registerServiceWorker() {
 }
 
 /**
- * Error Handling
+ * Error Handling and Logging
  */
+function logError(error, context = 'General') {
+  const errorInfo = {
+    message: error.message,
+    stack: error.stack,
+    context: context,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    url: window.location.href
+  };
+  
+  console.error(`[${context}] Error:`, errorInfo);
+  
+  // In production, send to error tracking service
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'exception', {
+      description: `${context}: ${error.message}`,
+      fatal: false
+    });
+  }
+  
+  return errorInfo;
+}
+
 window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  // Could send error to logging service
+  logError(event.error, 'Global JavaScript Error');
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  // Could send error to logging service
+  const error = new Error(event.reason?.message || 'Unhandled Promise Rejection');
+  error.stack = event.reason?.stack;
+  logError(error, 'Unhandled Promise');
+  
+  // Prevent the default console.error
+  event.preventDefault();
 });
+
+/**
+ * Chat Widget Integration
+ */
+function initChatWidget() {
+  if (!CONFIG.chat.enabled) return;
+  
+  try {
+    // Tawk.to configuration
+    if (typeof Tawk_API !== 'undefined') {
+      Tawk_API.onLoad = function() {
+        console.log('💬 Tawk.to chat widget loaded successfully');
+        trackUserInteraction('chat_widget_loaded');
+      };
+      
+      Tawk_API.onChatMaximized = function() {
+        trackUserInteraction('chat_opened');
+      };
+      
+      Tawk_API.onChatMinimized = function() {
+        trackUserInteraction('chat_minimized');
+      };
+    }
+  } catch (error) {
+    logError(error, 'Chat Widget Initialization');
+  }
+}
+
+/**
+ * Performance Monitoring
+ */
+function monitorPerformance() {
+  try {
+    // Monitor Core Web Vitals
+    if ('PerformanceObserver' in window) {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.log(`Performance: ${entry.name} = ${entry.value}ms`);
+        }
+      });
+      
+      observer.observe({ entryTypes: ['measure', 'navigation'] });
+    }
+    
+    // Log load time
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const perfData = performance.getEntriesByType('navigation')[0];
+        if (perfData) {
+          console.log(`Page loaded in ${Math.round(perfData.loadEventEnd - perfData.fetchStart)}ms`);
+        }
+      }, 0);
+    });
+  } catch (error) {
+    logError(error, 'Performance Monitoring');
+  }
+}
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', initApp);

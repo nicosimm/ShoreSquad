@@ -578,8 +578,109 @@ button, .btn {
   color: var(--white);
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
-  text-align: center;
+  text-align: left;
   margin-top: var(--spacing-xl);
+  position: relative;
+}
+
+.weather-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.weather-content.weather-error {
+  background: linear-gradient(135deg, var(--warning-orange), var(--accent-coral));
+}
+
+.weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.weather-location h3 {
+  color: var(--white);
+  margin-bottom: var(--spacing-xs);
+}
+
+.weather-source {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.weather-temp {
+  text-align: right;
+}
+
+.temp-main {
+  font-size: 3rem;
+  font-weight: 700;
+  display: block;
+  line-height: 1;
+}
+
+.temp-range {
+  font-size: 1rem;
+  opacity: 0.8;
+  display: block;
+}
+
+.weather-condition {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1.2rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.cleanup-recommendation {
+  background: rgba(255, 255, 255, 0.15);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.weather-updated {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.refresh-weather {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--white);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.refresh-weather:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .weather-loading {
@@ -587,6 +688,89 @@ button, .btn {
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md);
+}
+
+/* Error Notifications */
+.weather-error-notification {
+  position: fixed;
+  top: calc(var(--header-height) + 20px);
+  right: 20px;
+  background: var(--warning-orange);
+  color: var(--white);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.error-content button {
+  background: none;
+  border: none;
+  color: var(--white);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.error-content button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app-error-fallback {
+  background: var(--gray-light);
+  padding: var(--spacing-xxl);
+  text-align: center;
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-xl) 0;
+}
+
+.app-error-fallback .error-content {
+  flex-direction: column;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.app-error-fallback i {
+  color: var(--accent-coral);
+  margin-bottom: var(--spacing-lg);
+}
+
+.retry-btn {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.retry-btn:hover {
+  background: var(--secondary-teal);
+  transform: translateY(-2px);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Community Section */
