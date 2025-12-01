@@ -64,12 +64,16 @@ function initApp() {
     // Initialize additional features
     initChatWidget();
     monitorPerformance();
+    initMobileOptimizations();
     
     // Load initial data
     loadCleanupEvents();
     
     console.log('✅ ShoreSquad App Ready!');
     trackUserInteraction('app_initialized');
+    
+    // Show app is ready
+    document.body.classList.add('app-ready');
     
   } catch (error) {
     logError(error, 'App Initialization');
@@ -248,6 +252,9 @@ function initAnimatedCounters() {
 function initWeatherWidget() {
   if (!elements.weatherWidget) return;
   
+  // Show initial loading state
+  showWeatherLoading();
+  
   // Get user location and load weather
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -259,11 +266,23 @@ function initWeatherWidget() {
       error => {
         console.warn('Geolocation denied:', error);
         loadDefaultWeather();
-      }
+      },
+      { timeout: 10000, enableHighAccuracy: false }
     );
   } else {
     loadDefaultWeather();
   }
+}
+
+function showWeatherLoading() {
+  if (!elements.weatherWidget) return;
+  
+  elements.weatherWidget.innerHTML = `
+    <div class="loading-overlay">
+      <div class="spinner-large"></div>
+      <div class="loading-text">Getting Singapore weather data...</div>
+    </div>
+  `;
 }
 
 function loadDefaultWeather() {
@@ -765,11 +784,28 @@ function submitSignup(data) {
   const originalText = submitBtn.innerHTML;
   
   // Show loading state
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining Squad...';
+  submitBtn.innerHTML = '<div class="spinner"></div> Joining Squad...';
   submitBtn.disabled = true;
+  submitBtn.style.opacity = '0.7';
+  
+  // Add loading overlay to form
+  const loadingOverlay = document.createElement('div');
+  loadingOverlay.className = 'loading-overlay';
+  loadingOverlay.style.position = 'absolute';
+  loadingOverlay.innerHTML = `
+    <div class="spinner-large"></div>
+    <div class="loading-text">Creating your ShoreSquad account...</div>
+  `;
+  
+  const formContainer = elements.signupForm.parentElement;
+  formContainer.style.position = 'relative';
+  formContainer.appendChild(loadingOverlay);
   
   // Simulate API call
   setTimeout(() => {
+    // Remove loading overlay
+    loadingOverlay.remove();
+    
     // Success
     showSuccessMessage('Welcome to ShoreSquad! Check your email for confirmation.');
     elements.signupForm.reset();
@@ -777,6 +813,11 @@ function submitSignup(data) {
     // Reset button
     submitBtn.innerHTML = originalText;
     submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    
+    // Track successful signup
+    trackUserInteraction('user_signup_success', data);
+    
   }, 2000);
 }
 
@@ -932,23 +973,113 @@ function debounce(func, wait) {
 }
 
 /**
- * Performance and Analytics
+ * Mobile and Performance Optimizations
  */
-function trackUserInteraction(action, details = {}) {
-  console.log('User interaction:', action, details);
-  // This would integrate with analytics service
+function initMobileOptimizations() {
+  // Detect mobile device
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    document.body.classList.add('mobile-device');
+    
+    // Optimize touch events
+    optimizeTouchEvents();
+    
+    // Reduce animations on slower devices
+    if (navigator.hardwareConcurrency < 4) {
+      document.body.classList.add('reduced-motion');
+    }
+  }
+  
+  // Preload critical images
+  preloadCriticalAssets();
+  
+  // Optimize scroll performance
+  optimizeScrollPerformance();
 }
 
-function preloadImages() {
-  // Preload important images for better performance
-  const imageUrls = [
-    // Add important image URLs here
-  ];
+function optimizeTouchEvents() {
+  // Add touch feedback for buttons
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.matches('button, .btn, .nav-link')) {
+      e.target.style.transform = 'scale(0.98)';
+    }
+  }, { passive: true });
   
-  imageUrls.forEach(url => {
-    const img = new Image();
-    img.src = url;
-  });
+  document.addEventListener('touchend', (e) => {
+    if (e.target.matches('button, .btn, .nav-link')) {
+      setTimeout(() => {
+        e.target.style.transform = '';
+      }, 100);
+    }
+  }, { passive: true });
+}
+
+function preloadCriticalAssets() {
+  // Preload hero background patterns
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M0,10 Q25,0 50,10 T100,10 V20 H0 Z" fill="rgba(32,178,170,0.1)"/></svg>';
+  document.head.appendChild(link);
+}
+
+function optimizeScrollPerformance() {
+  // Throttle scroll events
+  let ticking = false;
+  
+  function updateScrollEffects() {
+    const header = document.querySelector('.header');
+    if (window.scrollY > 50) {
+      header.style.background = 'rgba(255, 255, 255, 0.98)';
+      header.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
+    } else {
+      header.style.background = 'rgba(255, 255, 255, 0.95)';
+      header.style.boxShadow = 'none';
+    }
+    ticking = false;
+  }
+  
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(updateScrollEffects);
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+/**
+ * Enhanced Error Handling
+ */
+function showEnhancedError(message, type = 'error', duration = 5000) {
+  const notification = document.createElement('div');
+  notification.className = `enhanced-notification ${type}`;
+  notification.innerHTML = `
+    <div class="notification-content">
+      <i class="fas ${
+        type === 'error' ? 'fa-exclamation-circle' :
+        type === 'warning' ? 'fa-exclamation-triangle' :
+        type === 'success' ? 'fa-check-circle' : 'fa-info-circle'
+      }"></i>
+      <span>${message}</span>
+      <button class="close-notification" onclick="this.parentElement.parentElement.remove()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  
+  // Add to page
+  document.body.appendChild(notification);
+  
+  // Auto remove
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateX(100%)';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, duration);
+  
+  return notification;
 }
 
 /**

@@ -1146,3 +1146,143 @@ button, .btn {
     page-break-after: avoid;
   }
 }
+
+/* Loading Spinners */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: currentColor;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.spinner-large {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  z-index: 10;
+  border-radius: inherit;
+}
+
+.loading-text {
+  color: var(--gray-dark);
+  font-weight: 500;
+}
+
+/* Pulse Animation for Loading States */
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-light) 25%, rgba(255, 255, 255, 0.5) 50%, var(--gray-light) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Enhanced Mobile Touch Targets */
+@media (max-width: 768px) {
+  /* Larger touch targets */
+  .nav-link,
+  .cta-primary,
+  .cta-secondary,
+  button {
+    min-height: 44px;
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+  
+  /* Form improvements */
+  input,
+  textarea {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Better spacing for mobile */
+  .hero-container {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  /* Mobile-optimized weather widget */
+  .weather-metrics {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  /* Improved map for mobile */
+  .map-container {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .map-display {
+    height: 300px;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  /* Better error messages */
+  .weather-error-notification,
+  .app-error-fallback {
+    margin: 0 var(--spacing-md);
+    font-size: 0.9rem;
+  }
+}
+
+/* Enhanced Focus States for Accessibility */
+button:focus,
+input:focus,
+a:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* Improved Error States */
+.error-state {
+  border-color: var(--accent-coral);
+  background-color: rgba(255, 107, 107, 0.1);
+}
+
+.success-state {
+  border-color: var(--success-green);
+  background-color: rgba(78, 205, 196, 0.1);
+}
+
+/* Performance Optimizations */
+.hero-visual,
+.feature-card,
+.stat-card {
+  will-change: transform;
+  backface-visibility: hidden;
+}
