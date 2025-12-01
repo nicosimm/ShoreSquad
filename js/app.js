@@ -1098,6 +1098,51 @@ function registerServiceWorker() {
 }
 
 /**
+ * Analytics and User Tracking
+ */
+function trackUserInteraction(action, details = {}) {
+  try {
+    console.log('📊 User interaction:', action, details);
+    
+    // In production, send to analytics service (Google Analytics, Mixpanel, etc.)
+    if (typeof gtag !== 'undefined') {
+      gtag('event', action, {
+        event_category: 'user_interaction',
+        event_label: JSON.stringify(details),
+        custom_map: details
+      });
+    }
+    
+    // Store interaction for internal analytics
+    const interaction = {
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      page: window.location.pathname,
+      userAgent: navigator.userAgent
+    };
+    
+    // Could store in localStorage for offline analytics
+    try {
+      const interactions = JSON.parse(localStorage.getItem('shoresquad_interactions') || '[]');
+      interactions.push(interaction);
+      
+      // Keep only last 100 interactions
+      if (interactions.length > 100) {
+        interactions.splice(0, interactions.length - 100);
+      }
+      
+      localStorage.setItem('shoresquad_interactions', JSON.stringify(interactions));
+    } catch (storageError) {
+      console.warn('Could not store interaction data:', storageError);
+    }
+    
+  } catch (error) {
+    console.warn('Tracking failed for action:', action, error);
+  }
+}
+
+/**
  * Error Handling and Logging
  */
 function logError(error, context = 'General') {
